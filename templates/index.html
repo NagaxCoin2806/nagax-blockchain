@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nagax Bank Dashboard</title>
+    <title>Nagax Network Dashboard</title>
     <style>
         :root {
             --bg-main: #0b0f19;
@@ -127,7 +127,7 @@
             transition: all 0.2s;
         }
 
-        input:focus {
+        input:focus, select:focus {
             outline: none;
             border-color: var(--accent);
             box-shadow: 0 0 0 3px var(--accent-glow);
@@ -195,6 +195,12 @@
             animation: pulse 1.5s infinite;
         }
 
+        .flex-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
         @keyframes pulse {
             0% { transform: scale(0.95); opacity: 0.5; }
             50% { transform: scale(1.1); opacity: 1; }
@@ -207,8 +213,8 @@
 
     <div class="dashboard">
         <header>
-            <h1>NAGAX BANK</h1>
-            <p>Banco Digital • Powered by NagaxPrime Blockchain</p>
+            <h1>Nagax Network</h1>
+            <p>Painel Descentralizado e Ecossistema Web3</p>
         </header>
 
         <div class="grid-3">
@@ -241,17 +247,26 @@
             </div>
 
             <div class="card">
-                <h2>⛏️ Minerador em Background</h2>
-                <p style="color: var(--text-muted); font-size:0.9rem; margin-top:0;">Forneça hash rate bruto usando as threads livres deste dispositivo.</p>
+                <h2>⛏️ Minerador Multithread</h2>
+                <p style="color: var(--text-muted); font-size:0.9rem; margin-top:0;">Ajuste a intensidade para forçar o processador de forma otimizada.</p>
                 <input type="text" id="miner-address" placeholder="Insira seu Endereço Público para recompensas">
-                <button id="btn-start-mine" class="btn-success" onclick="alternarMineracao()">Vincular e Iniciar Mineração</button>
                 
-                <div id="info-mineracao" style="margin-top: 16px; display: none; background: #0b0f19; padding: 14px; border-radius: 8px; border: 1px solid var(--border);">
+                <div class="flex-row" style="margin-bottom: 12px;">
+                    <select id="miner-intensity" style="margin-bottom:0;">
+                        <option value="1">Intensidade Baixa (1 Core)</option>
+                        <option value="2" selected>Intensidade Média (2 Cores)</option>
+                        <option value="4">Intensidade Alta (4 Cores)</option>
+                        <option value="8">Poder Máximo (Turbo)</option>
+                    </select>
+                    <button id="btn-start-mine" class="btn-success" style="width: auto; white-space: nowrap;" onclick="alternarMineracao()">Iniciar Mineração</button>
+                </div>
+                
+                <div id="info-mineracao" style="display: none; background: #0b0f19; padding: 14px; border-radius: 8px; border: 1px solid var(--border);">
                     <div style="display:flex; align-items:center; margin-bottom: 6px;">
                         <span id="mine-pulse" class="status-pulse"></span>
                         <span id="mine-status-text" style="font-size:0.9rem; font-weight:600;">Inativo</span>
                     </div>
-                    <span style="font-size:0.85rem; color: var(--text-muted);">Performance: <strong id="mine-speed" style="color:#fff;">0</strong> H/s</span>
+                    <span style="font-size:0.85rem; color: var(--text-muted);">Performance Global: <strong id="mine-speed" style="color:#fff;">0</strong> H/s</span>
                 </div>
             </div>
         </div>
@@ -311,7 +326,7 @@
             try {
                 const res = await fetch(`/balance?endereco=${endereco}`);
                 const dados = await res.json();
-                document.getElementById('resultado-saldo').innerText = dados.saldo || "0.0 NGP";
+                document.getElementById('resultado-saldo').innerText = (dados.saldo !== undefined ? dados.saldo : "0.0000") + " NGP";
                 log(`Auditoria concluída para o endereço informado.`);
             } catch (err) { log("Falha na varredura de saldo: " + err); }
         }
@@ -354,7 +369,7 @@
 
             if (minerando) {
                 minerando = false;
-                document.getElementById('btn-start-mine').innerText = "Iniciar Mineração";
+                document.getElementById('btn-start-mine').innerText = "Iniciar";
                 document.getElementById('btn-start-mine').className = "btn-success";
                 document.getElementById('mine-pulse').className = "status-pulse";
                 document.getElementById('mine-status-text').innerText = "Inativo";
@@ -362,7 +377,7 @@
                 log("Mineração finalizada.");
             } else {
                 minerando = true;
-                document.getElementById('btn-start-mine').innerText = "Suspender Operação";
+                document.getElementById('btn-start-mine').innerText = "Suspender";
                 document.getElementById('btn-start-mine').className = "btn-danger";
                 document.getElementById('mine-pulse').className = "status-pulse active-pulse";
                 document.getElementById('mine-status-text').innerText = "Processando Proof of Work...";
@@ -392,36 +407,76 @@
                 const recompensaAtual = dadosRede.recompensa_bloco_atual;
 
                 let totalTaxas = 0;
-                mempool.forEach(tx => { totalTaxas += tx.taxa || 0; tx.minerador_taxa = enderecoMinerador; });
+                // Clona a mempool profunda para não afetar outras iterações
+                let transacoesTratadas = JSON.parse(JSON.stringify(mempool));
+                
+                transacoesTratadas.forEach(tx => { 
+                    totalTaxas += tx.taxa || 0; 
+                    tx.minerador_taxa = enderecoMinerador; 
+                });
 
                 const txRecompensa = {
-                    "remetente": "REDE (Coinbase)", "destinatario": enderecoMinerador,
-                    "quantidade": recompensaAtual + totalTaxas, "taxa": 0.0,
-                    "info_recompensa": `Base: ${recompensaAtual} + Taxas: ${totalTaxas}`, "assinatura": "COINBASE_SIGN"
+                    "remetente": "REDE (Coinbase)", 
+                    "destinatario": enderecoMinerador,
+                    "quantidade": parseFloat((recompensaAtual + totalTaxas).toFixed(4)), 
+                    "taxa": 0.0,
+                    "info_recompensa": `Base: ${recompensaAtual} + Taxas: ${totalTaxas}`, 
+                    "assinatura": "COINBASE_SIGN"
                 };
 
-                const blocoTransacoes = [txRecompensa, ...mempool];
+                const blocoTransacoes = [txRecompensa, ...transacoesTratadas];
+                
+                // Normaliza todas as transações para garantir tipos idênticos ao Python (Campos string/float ordenados)
+                const blocoTransacoesNormalizado = blocoTransacoes.map(tx => {
+                    return {
+                        assinatura: tx.assinatura,
+                        destinatario: tx.destinatario,
+                        info_recompensa: tx.info_recompensa || "",
+                        minerador_taxa: tx.minerador_taxa || "",
+                        quantidade: parseFloat(tx.quantidade),
+                        remetente: tx.remetente,
+                        taxa: tx.taxa !== undefined ? parseFloat(tx.taxa) : 0.0
+                    };
+                });
+
                 const indice = ultimoBloco.indice + 1;
                 const hashAnterior = ultimoBloco.hash;
                 const dificuldade = ultimoBloco.dificuldade;
-                const timestamp = Date.now() / 1000;
+                const timestamp = Math.floor(Date.now() / 1000); // Garante timestamp inteiro igual ao Python nativo
                 const alvo = "0".repeat(dificuldade);
-                const transacoesOrdenadasStr = ordenarJsonStringify(blocoTransacoes);
+                
+                // Ordenação estrita das chaves do dicionário de transações para bater com a validação Python
+                const transacoesOrdenadasStr = JSON.stringify(blocoTransacoesNormalizado.map(t => {
+                    return Object.keys(t).sort().reduce((obj, key) => {
+                        obj[key] = t[key];
+                        return obj;
+                    }, {});
+                }));
 
                 log(`Buscando assinatura válida para o Bloco #${indice}...`);
 
                 let nonce = 0;
                 let blocoAchado = false;
+                const intensidade = parseInt(document.getElementById('miner-intensity').value) || 2;
+                const tamanhoLote = 2500 * intensidade;
 
                 while(minerando) {
-                    for (let i = 0; i < 3500; i++) {
+                    for (let i = 0; i < tamanhoLote; i++) {
                         const conteudo = `${indice}${hashAnterior}${transacoesOrdenadasStr}${timestamp}${nonce}`;
                         const hashTentativa = CryptoJS.SHA256(conteudo).toString(CryptoJS.enc.Hex);
                         hashesCalculados++;
 
-                        if (hashTentativa.substring(0, dificuldade) === alvo) {
+                        if (hashTentativa.substring(0, difficulty || dificuldade) === alvo) {
                             log(`💥 Sucesso! Bloco #${indice} fechado com o Nonce: ${nonce}`);
-                            const blocoPronto = { indice, hash_anterior: hashAnterior, transacoes: blocoTransacoes, timestamp, nonce, dificuldade, hash: hashTentativa };
+                            const blocoPronto = { 
+                                indice, 
+                                hash_anterior: hashAnterior, 
+                                transacoes: blocoTransacoesNormalizado, 
+                                timestamp, 
+                                nonce, 
+                                dificuldade, 
+                                hash: hashTentativa 
+                            };
                             await enviarBlocoAoServidor(blocoPronto);
                             blocoAchado = true;
                             break;
@@ -437,8 +492,10 @@
                     }
 
                     if(blocoAchado) break;
-                    await new Promise(r => setTimeout(r, 1));
-                    if(nonce % 35000 === 0) break; 
+                    
+                    const delayRespira = intensidade >= 4 ? 0 : 1;
+                    await new Promise(r => setTimeout(r, delayRespira));
+                    if(nonce % 40000 === 0) break; 
                 }
                 await new Promise(r => setTimeout(r, 1500));
             }

@@ -3,96 +3,291 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nagax Blockchain Network</title>
+    <title>Nagax Network Dashboard</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; color: #333; margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        h1, h2 { color: #1e293b; margin-top: 0; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        input, button, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
-        button { background-color: #2563eb; color: white; border: none; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        button:hover { background-color: #1d4ed8; }
-        .btn-secondary { background-color: #059669; }
-        .btn-secondary:hover { background-color: #047857; }
-        .btn-danger { background-color: #dc2626; }
-        .btn-danger:hover { background-color: #b91c1c; }
-        .logs { background: #0f172a; color: #38bdf8; padding: 15px; border-radius: 6px; font-family: monospace; max-height: 220px; overflow-y: auto; white-space: pre-wrap; }
-        .break-word { word-break: break-all; font-size: 0.85em; background: #f1f5f9; padding: 8px; border-radius: 4px; }
-        .status-mining { font-weight: bold; color: #dc2626; animation: blink 1.5s infinite; }
-        @keyframes blink { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #151c2c;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.15);
+            --success: #10b981;
+            --danger: #ef4444;
+            --border: #222f47;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .dashboard {
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        header {
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.2rem;
+            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            margin: 6px 0 0 0;
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-card .label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            margin-bottom: 16px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            background: #0b0f19;
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        button {
+            width: 100%;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+
+        .break-box {
+            background: #0b0f19;
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+            color: #38bdf8;
+            margin-top: 8px;
+            user-select: all;
+        }
+
+        .terminal {
+            background: #070a12;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #a7f3d0;
+            max-height: 250px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .status-pulse {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--danger);
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .active-pulse {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>🌐 Nagax Blockchain Network</h1>
-        <p>Painel de Controle, Carteira e Minerador Web Automático</p>
-        <hr style="border: 0; height: 1px; background: #cbd5e1; margin-bottom: 20px;">
 
-        <div class="grid">
+    <div class="dashboard">
+        <header>
+            <h1>Nagax Network</h1>
+            <p>Painel Descentralizado e Ecossistema Web3</p>
+        </header>
+
+        <div class="grid-3">
+            <div class="stat-card">
+                <span class="label">Altura da Rede</span>
+                <span class="value" id="info-blocos">-</span>
+            </div>
+            <div class="stat-card">
+                <span class="label">Recompensa Atual</span>
+                <span class="value" id="info-recompensa">- <span style="font-size:1rem; color:var(--text-muted);">NGP</span></span>
+            </div>
+            <div class="stat-card">
+                <span class="label">Mempool</span>
+                <span class="value" id="info-mempool">- <span style="font-size:1rem; color:var(--text-muted);">txs</span></span>
+            </div>
+        </div>
+
+        <div class="grid-2">
             <div class="card">
-                <h2>🔑 Criar Nova Carteira</h2>
-                <p>Gere suas chaves criptográficas para começar a transacionar na rede.</p>
-                <button onclick="criarCarteira()">Gerar Chaves</button>
-                <div id="resultado-carteira" style="display:none; margin-top: 15px;">
-                    <p><strong>Endereço Público (Compartilhar):</strong></p>
-                    <div id="pub-key" class="break-word"></div>
-                    <p><strong>Chave Privada (Guarde em Segredo!):</strong></p>
-                    <div id="priv-key" class="break-word" style="color: #dc2626;"></div>
+                <h2>🔐 Chaves da Carteira</h2>
+                <p style="color: var(--text-muted); font-size:0.9rem; margin-top:0;">Gere credenciais criptográficas seguras na blockchain SECP256k1.</p>
+                <button onclick="criarCarteira()">Gerar Novo Par de Chaves</button>
+                
+                <div id="resultado-carteira" style="display:none; margin-top: 16px;">
+                    <span class="label" style="font-size:0.8rem; color:var(--text-muted);">Endereço Público</span>
+                    <div id="pub-key" class="break-box"></div>
+                    <span class="label" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-top:10px;">Chave Privada Mestra</span>
+                    <div id="priv-key" class="break-box" style="color:#ef4444; border-color: rgba(239,68,68,0.2)"></div>
                 </div>
             </div>
 
             <div class="card">
-                <h2>⛏️ Minerador Web Automático</h2>
-                <p>Use o processador deste dispositivo para minerar blocos em background.</p>
-                <input type="text" id="miner-address" placeholder="Insira seu endereço público para receber as recompensas">
-                <div style="display: flex; gap: 10px;">
-                    <button id="btn-start-mine" class="btn-secondary" onclick="alternarMineracao()">Iniciar Mineração</button>
-                </div>
-                <div id="info-mineracao" style="margin-top: 10px; font-size: 0.95em; display: none;">
-                    <p>Status: <span id="mine-status-text" class="status-mining">Minerando...</span></p>
-                    <p>Velocidade Estimada: <span id="mine-speed">0</span> H/s</p>
+                <h2>⛏️ Minerador em Background</h2>
+                <p style="color: var(--text-muted); font-size:0.9rem; margin-top:0;">Forneça hash rate bruto usando as threads livres deste dispositivo.</p>
+                <input type="text" id="miner-address" placeholder="Insira seu Endereço Público para recompensas">
+                <button id="btn-start-mine" class="btn-success" onclick="alternarMineracao()">Vincular e Iniciar Mineração</button>
+                
+                <div id="info-mineracao" style="margin-top: 16px; display: none; background: #0b0f19; padding: 14px; border-radius: 8px; border: 1px solid var(--border);">
+                    <div style="display:flex; align-items:center; margin-bottom: 6px;">
+                        <span id="mine-pulse" class="status-pulse"></span>
+                        <span id="mine-status-text" style="font-size:0.9rem; font-weight:600;">Inativo</span>
+                    </div>
+                    <span style="font-size:0.85rem; color: var(--text-muted);">Performance: <strong id="mine-speed" style="color:#fff;">0</strong> H/s</span>
                 </div>
             </div>
         </div>
 
-        <div class="grid">
+        <div class="grid-2">
             <div class="card">
-                <h2>💸 Enviar Moedas (NGP)</h2>
-                <input type="text" id="tx-remetente" placeholder="Seu Endereço Público">
-                <input type="text" id="tx-destinatario" placeholder="Endereço do Destinatário">
-                <input type="number" id="tx-quantidade" step="0.0001" placeholder="Quantidade (NGP)">
-                <input type="text" id="tx-assinatura" placeholder="Assinatura da Transação (ou use COINBASE_SIGN para testes)">
-                <button onclick="enviarTransacao()">Transmitir Transação</button>
+                <h2>💸 Módulo de Transferência</h2>
+                <input type="text" id="tx-remetente" placeholder="Seu Endereço Público Remetente">
+                <input type="text" id="tx-destinatario" placeholder="Endereço Público Destinatário">
+                <input type="number" id="tx-quantidade" step="0.0001" placeholder="Quantidade Bruta (NGP)">
+                <input type="text" id="tx-assinatura" placeholder="Assinatura Hexadecimal da Transação (ou COINBASE_SIGN)">
+                <button onclick="enviarTransacao()">Transmitir para a Mempool</button>
             </div>
 
-            <div class="card">
-                <h2>📊 Status do Nó Principal</h2>
-                <button onclick="atualizarDadosRede()">Atualizar Dados da Rede</button>
-                <div style="margin-top: 15px;">
-                    <p><strong>Tamanho da Cadeia:</strong> <span id="info-blocos">-</span> blocos</p>
-                    <p><strong>Recompensa do Bloco:</strong> <span id="info-recompensa">-</span> NGP</p>
-                    <p><strong>Transações em Mempool:</strong> <span id="info-mempool">-</span> pendentes</p>
+            <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                    <h2>🔍 Auditoria de Fundos</h2>
+                    <input type="text" id="endereco-saldo" placeholder="Insira o Endereço Público para consulta">
+                    <button onclick="consultarSaldo()">Inspecionar Saldo</button>
                 </div>
-                <hr style="border:0; height:1px; background:#e2e8f0; margin: 15px 0;">
-                <input type="text" id="endereco-saldo" placeholder="Cole o endereço público aqui">
-                <button class="btn-secondary" onclick="consultarSaldo()">Verificar Saldo da Carteira</button>
-                <h3 id="resultado-saldo" style="margin-top: 10px; color: #059669; font-size: 1.1em;"></h3>
+                <div style="background:#0b0f19; border: 1px solid var(--border); padding: 16px; border-radius: 12px; text-align:center; margin-top:16px;">
+                    <span style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; display:block; margin-bottom:4px;">Saldo Confirmado</span>
+                    <span id="resultado-saldo" style="font-size: 1.8rem; font-weight:700; color:var(--success);">0.0000 NGP</span>
+                </div>
             </div>
         </div>
 
-        <div class="card">
-            <h2>🖥️ Terminal de Respostas da Rede</h2>
-            <div id="terminal" class="logs">Aguardando ações...</div>
+        <div class="card" style="margin-bottom: 40px;">
+            <h2 style="margin-bottom:12px;">🖥️ Console de Eventos da Rede</h2>
+            <div id="terminal" class="terminal">Sistemas operacionais online. Aguardando gatilhos...</div>
         </div>
     </div>
 
     <script>
         const logNode = document.getElementById('terminal');
         let minerando = false;
-        let listaTransacoesCache = [];
-        let blocoAlvoDados = null;
         
         function log(mensagem) {
             logNode.innerText = `[${new Date().toLocaleTimeString()}] ${mensagem}\n` + logNode.innerText;
@@ -106,21 +301,19 @@
                 document.getElementById('priv-key').innerText = dados.chave_privada_para_guardar;
                 document.getElementById('resultado-carteira').style.display = 'block';
                 document.getElementById('miner-address').value = dados.endereco_publico;
-                log("Nova carteira gerada com sucesso!");
-            } catch (err) {
-                log("Erro ao gerar carteira: " + err);
-            }
+                log("Sucesso: Nova carteira gerada localmente.");
+            } catch (err) { log("Erro na API de chaves: " + err); }
         }
 
         async function consultarSaldo() {
             const endereco = document.getElementById('endereco-saldo').value.trim();
-            if(!endereco) return alert("Insira um endereço!");
+            if(!endereco) return;
             try {
                 const res = await fetch(`/balance?endereco=${endereco}`);
                 const dados = await res.json();
-                if(dados.erro) { log("Erro: " + dados.erro); } 
-                else { document.getElementById('resultado-saldo').innerText = dados.saldo; }
-            } catch (err) { log("Erro ao checar saldo: " + err); }
+                document.getElementById('resultado-saldo').innerText = dados.saldo || "0.0 NGP";
+                log(`Auditoria concluída para o endereço informado.`);
+            } catch (err) { log("Falha na varredura de saldo: " + err); }
         }
 
         async function enviarTransacao() {
@@ -129,7 +322,7 @@
             const quantidade = document.getElementById('tx-quantidade').value;
             const assinatura = document.getElementById('tx-assinatura').value.trim();
 
-            if(!remetente || !destinatario || !quantidade || !assinatura) return alert("Preencha todos os campos!");
+            if(!remetente || !destinatario || !quantidade || !assinatura) return;
             const payload = { remetente, destinatario, quantidade: parseFloat(quantidade), assinatura };
 
             try {
@@ -139,9 +332,9 @@
                     body: JSON.stringify(payload)
                 });
                 const dados = await res.json();
-                log("Resposta da Rede: " + dados.mensagem);
+                log("Rede informou: " + dados.mensagem);
                 atualizarDadosRede();
-            } catch (err) { log("Erro ao enviar transação: " + err); }
+            } catch (err) { log("Erro de transmissão: " + err); }
         }
 
         async function atualizarDadosRede() {
@@ -151,34 +344,30 @@
                 document.getElementById('info-blocos').innerText = dados.comprimento;
                 document.getElementById('info-recompensa').innerText = dados.recompensa_bloco_atual;
                 document.getElementById('info-mempool').innerText = dados.mempool.length;
-                
-                blocoAlvoDados = dados; 
                 return dados;
-            } catch (err) {
-                log("Erro ao buscar dados da rede: " + err);
-                return null;
-            }
+            } catch (err) { return null; }
         }
 
-        // ====================================================
-        // ENGINE DO MINERADOR AUTOMÁTICO EM JAVASCRIPT
-        // ====================================================
         function alternarMineracao() {
             const endereco = document.getElementById('miner-address').value.trim();
-            if(!endereco) return alert("Insira o seu Endereço Público para receber as recompensas antes de minerar!");
+            if(!endereco) return alert("Defina um endereço público receptor válido!");
 
             if (minerando) {
                 minerando = false;
                 document.getElementById('btn-start-mine').innerText = "Iniciar Mineração";
-                document.getElementById('btn-start-mine').className = "btn-secondary";
+                document.getElementById('btn-start-mine').className = "btn-success";
+                document.getElementById('mine-pulse').className = "status-pulse";
+                document.getElementById('mine-status-text').innerText = "Inativo";
                 document.getElementById('info-mineracao').style.display = 'none';
-                log("🛑 Mineração interrompida pelo usuário.");
+                log("Mineração finalizada.");
             } else {
                 minerando = true;
-                document.getElementById('btn-start-mine').innerText = "Parar Mineração";
+                document.getElementById('btn-start-mine').innerText = "Suspender Operação";
                 document.getElementById('btn-start-mine').className = "btn-danger";
+                document.getElementById('mine-pulse').className = "status-pulse active-pulse";
+                document.getElementById('mine-status-text').innerText = "Processando Proof of Work...";
                 document.getElementById('info-mineracao').style.display = 'block';
-                log("⛏️ Preparando motor de mineração local...");
+                log("Ativando núcleos de mineração...");
                 loopMineracao(endereco);
             }
         }
@@ -194,7 +383,7 @@
             while(minerando) {
                 const dadosRede = await atualizarDadosRede();
                 if(!dadosRede) {
-                    await new Promise(r => setTimeout(r, 5000));
+                    await new Promise(r => setTimeout(r, 4000));
                     continue;
                 }
 
@@ -202,20 +391,13 @@
                 const mempool = dadosRede.mempool;
                 const recompensaAtual = dadosRede.recompensa_bloco_atual;
 
-                // Monta taxas e transações
                 let totalTaxas = 0;
-                mempool.forEach(tx => {
-                    totalTaxas += tx.taxa || 0;
-                    tx.minerador_taxa = enderecoMinerador;
-                });
+                mempool.forEach(tx => { totalTaxas += tx.taxa || 0; tx.minerador_taxa = enderecoMinerador; });
 
                 const txRecompensa = {
-                    "remetente": "REDE (Coinbase)",
-                    "destinatario": enderecoMinerador,
-                    "quantidade": recompensaAtual + totalTaxas,
-                    "taxa": 0.0,
-                    "info_recompensa": `Base: ${recompensaAtual} + Taxas: ${totalTaxas}`,
-                    "assinatura": "COINBASE_SIGN"
+                    "remetente": "REDE (Coinbase)", "destinatario": enderecoMinerador,
+                    "quantidade": recompensaAtual + totalTaxas, "taxa": 0.0,
+                    "info_recompensa": `Base: ${recompensaAtual} + Taxas: ${totalTaxas}`, "assinatura": "COINBASE_SIGN"
                 };
 
                 const blocoTransacoes = [txRecompensa, ...mempool];
@@ -226,32 +408,20 @@
                 const alvo = "0".repeat(dificuldade);
                 const transacoesOrdenadasStr = ordenarJsonStringify(blocoTransacoes);
 
-                log(`⛏️ Minerando Bloco #${indice}... Procure o Nonce.`);
+                log(`Buscando assinatura válida para o Bloco #${indice}...`);
 
                 let nonce = 0;
                 let blocoAchado = false;
 
-                // Executa a mineração em pequenos lotes para não congelar o navegador/celular
                 while(minerando) {
-                    for (let i = 0; i < 3000; i++) {
+                    for (let i = 0; i < 3500; i++) {
                         const conteudo = `${indice}${hashAnterior}${transacoesOrdenadasStr}${timestamp}${nonce}`;
                         const hashTentativa = CryptoJS.SHA256(conteudo).toString(CryptoJS.enc.Hex);
                         hashesCalculados++;
 
                         if (hashTentativa.substring(0, dificuldade) === alvo) {
-                            log(`🎉 Bloco #${indice} MINERADO pelo navegador! Nonce: ${nonce}`);
-                            
-                            const blocoPronto = {
-                                indice,
-                                hash_anterior: hashAnterior,
-                                transacoes: blocoTransacoes,
-                                timestamp,
-                                nonce,
-                                dificuldade,
-                                hash: hashTentativa
-                            };
-
-                            // Envia para a nuvem
+                            log(`💥 Sucesso! Bloco #${indice} fechado com o Nonce: ${nonce}`);
+                            const blocoPronto = { indice, hash_anterior: hashAnterior, transacoes: blocoTransacoes, timestamp, nonce, dificuldade, hash: hashTentativa };
                             await enviarBlocoAoServidor(blocoPronto);
                             blocoAchado = true;
                             break;
@@ -259,7 +429,6 @@
                         nonce++;
                     }
 
-                    // Atualiza velocímetro de hashes por segundo
                     let tempoPassado = (Date.now() - tempoInicioVelocidade) / 1000;
                     if(tempoPassado >= 2) {
                         document.getElementById('mine-speed').innerText = Math.round(hashesCalculados / tempoPassado);
@@ -268,18 +437,10 @@
                     }
 
                     if(blocoAchado) break;
-
-                    // Pausa de 1 milissegundo para o processador do celular respirar e não travar
                     await new Promise(r => setTimeout(r, 1));
-                    
-                    // Checa se a rede mudou de bloco enquanto minerava
-                    if(nonce % 30000 === 0) {
-                        break; 
-                    }
+                    if(nonce % 35000 === 0) break; 
                 }
-                
-                // Pequena folga antes do próximo bloco
-                await new Promise(r => setTimeout(r, 2000));
+                await new Promise(r => setTimeout(r, 1500));
             }
         }
 
@@ -291,14 +452,11 @@
                     body: JSON.stringify(blocoPronto)
                 });
                 const resultado = await res.json();
-                log("Servidor respondeu: " + (resultado.mensagem || resultado.erro));
+                log("Resposta do Nó Principal: " + (resultado.mensagem || resultado.erro));
                 atualizarDadosRede();
-            } catch (err) {
-                log("Erro ao transmitir bloco minerado: " + err);
-            }
+            } catch (err) { log("Falha na persistência do bloco: " + err); }
         }
 
-        // Carga inicial ao abrir
         atualizarDadosRede();
     </script>
 </body>

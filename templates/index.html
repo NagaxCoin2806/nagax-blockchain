@@ -1,141 +1,517 @@
-import requests
-import hashlib
-import json
-import time
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nagax Network Dashboard</title>
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #151c2c;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.15);
+            --success: #10b981;
+            --danger: #ef4444;
+            --border: #222f47;
+        }
 
-# URL do seu servidor hospedado no Render
-URL_REDE = "https://nagax-blockchain.onrender.com"
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+        }
 
-def ordenar_json_stringify(obj):
-    # Ordena as chaves do dicionário para garantir que o hash bata com o validador Python do servidor
-    return json.dumps(obj, sort_keys=True, separators=(',', ':'))
+        .dashboard {
+            width: 100%;
+            max-width: 1200px;
+        }
 
-def minerar(endereco_minerador):
-    if not endereco_minerador:
-        print("❌ Erro: Você precisa definir um endereço público para receber as recompensas!")
-        return
+        header {
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
 
-    print("🚀 Minerador Nagax Network iniciado...")
-    
-    while True:
-        try:
-            # 1. Busca o estado atual da rede (Cadeia, Mempool e Recompensa)
-            resposta = requests.get(f"{URL_REDE}/chain")
-            if resposta.status_code != 200:
-                print("❌ Falha ao obter dados da blockchain. Tentando novamente...")
-                time.sleep(4)
-                continue
+        header h1 {
+            margin: 0;
+            font-size: 2.2rem;
+            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            margin: 6px 0 0 0;
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-card .label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            margin-bottom: 16px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            background: #0b0f19;
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        button {
+            width: 100%;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+
+        .break-box {
+            background: #0b0f19;
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+            color: #38bdf8;
+            margin-top: 8px;
+            user-select: all;
+        }
+
+        .terminal {
+            background: #070a12;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #a7f3d0;
+            max-height: 250px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .status-pulse {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--danger);
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .active-pulse {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 1.5s infinite;
+        }
+
+        .flex-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+<body>
+
+    <div class="dashboard">
+        <header>
+            <h1>Nagax Network</h1>
+            <p>Painel Descentralizado e Ecossistema Web3</p>
+        </header>
+
+        <div class="grid-3">
+            <div class="stat-card">
+                <span class="label">Altura da Rede</span>
+                <span class="value" id="info-blocos">-</span>
+            </div>
+            <div class="stat-card">
+                <span class="label">Recompensa Atual</span>
+                <span class="value" id="info-recompensa">- <span style="font-size:1rem; color:var(--text-muted);">NGP</span></span>
+            </div>
+            <div class="stat-card">
+                <span class="label">Mempool</span>
+                <span class="value" id="info-mempool">- <span style="font-size:1rem; color:var(--text-muted);">txs</span></span>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h2>🔐 Chaves da Carteira</h2>
+                <p style="color: var(--text-muted); font-size:0.9rem; margin-top:0;">Gere credenciais criptográficas seguras na blockchain SECP256k1.</p>
+                <button onclick="criarCarteira()">Gerar Novo Par de Chaves</button>
                 
-            dados_rede = resposta.json()
-            cadeia = dados_rede["cadeia"]
-            mempool = dados_rede.get("mempool", [])
-            recompensa_atual = dados_rede["recompensa_bloco_atual"]
-            
-            ultimo_bloco = cadeia[-1]
-            indice = ultimo_bloco["indice"] + 1
-            hash_anterior = ultimo_bloco["hash"]
-            dificuldade = ultimo_bloco["dificuldade"]
-            quantidade_txs = len(mempool)
+                <div id="resultado-carteira" style="display:none; margin-top: 16px;">
+                    <span class="label" style="font-size:0.8rem; color:var(--text-muted);">Endereço Público</span>
+                    <div id="pub-key" class="break-box"></div>
+                    <span class="label" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-top:10px;">Chave Privada Mestra</span>
+                    <div id="priv-key" class="break-box" style="color:#ef4444; border-color: rgba(239,68,68,0.2)"></div>
+                </div>
+            </div>
 
-            # Exibe o painel de informações atualizado no terminal
-            print(f"⛏️  Minerando Bloco #{indice} | Dificuldade: {dificuldade} | Mempool: {quantidade_txs} txs")
+            <div class="card">
+                <h2>⛏️ Minerador Multithread</h2>
+                <p style="color: var(--text-muted); font-size:0.9rem; margin-top:0;">Ajuste a intensidade para forçar o processador de forma otimizada.</p>
+                <input type="text" id="miner-address" placeholder="Insira seu Endereço Público para recompensas">
+                
+                <div class="flex-row" style="margin-bottom: 12px;">
+                    <select id="miner-intensity" style="margin-bottom:0;">
+                        <option value="1">Intensidade Baixa (1 Core)</option>
+                        <option value="2" selected>Intensidade Média (2 Cores)</option>
+                        <option value="4">Intensidade Alta (4 Cores)</option>
+                        <option value="8">Poder Máximo (Turbo)</option>
+                    </select>
+                    <button id="btn-start-mine" class="btn-success" style="width: auto; white-space: nowrap;" onclick="alternarMineracao()">Iniciar Mineração</button>
+                </div>
+                
+                <div id="info-mineracao" style="display: none; background: #0b0f19; padding: 14px; border-radius: 8px; border: 1px solid var(--border);">
+                    <div style="display:flex; align-items:center; margin-bottom: 6px;">
+                        <span id="mine-pulse" class="status-pulse"></span>
+                        <span id="mine-status-text" style="font-size:0.9rem; font-weight:600;">Inativo</span>
+                    </div>
+                    <span style="font-size:0.85rem; color: var(--text-muted);">Performance Global: <strong id="mine-speed" style="color:#fff;">0</strong> H/s</span>
+                </div>
+            </div>
+        </div>
 
-            # 2. Monta a transação Coinbase (Recompensa do Minerador) + Taxas
-            total_taxas = 0.0
-            transacoes_tratadas = json.loads(json.dumps(mempool)) # Clone profundo da mempool
-            
-            for tx in transacoes_tratadas:
-                total_taxas += float(tx.get("taxa", 0.0))
-                tx["minerador_taxa"] = endereco_minerador
+        <div class="grid-2">
+            <div class="card">
+                <h2>💸 Módulo de Transferência</h2>
+                <input type="text" id="tx-remetente" placeholder="Seu Endereço Público Remetente">
+                <input type="text" id="tx-destinatario" placeholder="Endereço Público Destinatário">
+                <input type="number" id="tx-quantidade" step="0.0001" placeholder="Quantidade Bruta (NGP)">
+                <input type="text" id="tx-assinatura" placeholder="Assinatura Hexadecimal da Transação (ou COINBASE_SIGN)">
+                <button onclick="enviarTransacao()">Transmitir para a Mempool</button>
+            </div>
 
-            tx_recompensa = {
-                "remetente": "REDE (Coinbase)",
-                "destinatario": endereco_minerador,
-                "quantidade": round(recompensa_atual + total_taxas, 4),
-                "taxa": 0.0,
-                "info_recompensa": f"Base: {recompensa_atual} + Taxas: {total_taxas}",
-                "assinatura": "COINBASE_SIGN"
+            <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                    <h2>🔍 Auditoria de Fundos</h2>
+                    <input type="text" id="endereco-saldo" placeholder="Insira o Endereço Público para consulta">
+                    <button onclick="consultarSaldo()">Inspecionar Saldo</button>
+                </div>
+                <div style="background:#0b0f19; border: 1px solid var(--border); padding: 16px; border-radius: 12px; text-align:center; margin-top:16px;">
+                    <span style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; display:block; margin-bottom:4px;">Saldo Confirmado</span>
+                    <span id="resultado-saldo" style="font-size: 1.8rem; font-weight:700; color:var(--success);">0.0000 NGP</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 40px;">
+            <h2 style="margin-bottom:12px;">🖥️ Console de Eventos da Rede</h2>
+            <div id="terminal" class="terminal">Sistemas operacionais online. Aguardando gatilhos...</div>
+        </div>
+    </div>
+
+    <script>
+        const logNode = document.getElementById('terminal');
+        let minerando = false;
+        
+        function log(mensagem) {
+            logNode.innerText = `[${new Date().toLocaleTimeString()}] ${mensagem}\n` + logNode.innerText;
+        }
+
+        async function criarCarteira() {
+            try {
+                const res = await fetch('/wallet/create');
+                const dados = await res.json();
+                document.getElementById('pub-key').innerText = dados.endereco_publico;
+                document.getElementById('priv-key').innerText = dados.chave_privada_para_guardar;
+                document.getElementById('resultado-carteira').style.display = 'block';
+                document.getElementById('miner-address').value = dados.endereco_publico;
+                log("Sucesso: Nova carteira gerada localmente.");
+            } catch (err) { log("Erro na API de chaves: " + err); }
+        }
+
+        async function consultarSaldo() {
+            const endereco = document.getElementById('endereco-saldo').value.trim();
+            if(!endereco) return;
+            try {
+                const res = await fetch(`/balance?endereco=${endereco}`);
+                const dados = await res.json();
+                document.getElementById('resultado-saldo').innerText = (dados.saldo !== undefined ? dados.saldo : "0.0000") + " NGP";
+                log(`Auditoria concluída para o endereço informado.`);
+            } catch (err) { log("Falha na varredura de saldo: " + err); }
+        }
+
+        async function enviarTransacao() {
+            const remetente = document.getElementById('tx-remetente').value.trim();
+            const destinatario = document.getElementById('tx-destinatario').value.trim();
+            const quantidade = document.getElementById('tx-quantidade').value;
+            const assinatura = document.getElementById('tx-assinatura').value.trim();
+
+            if(!remetente || !destinatario || !quantidade || !assinatura) return;
+            const payload = { remetente, destinatario, quantidade: parseFloat(quantidade), assinatura };
+
+            try {
+                const res = await fetch('/transactions/new', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const dados = await res.json();
+                log("Rede informou: " + dados.mensagem);
+                atualizarDadosRede();
+            } catch (err) { log("Erro de transmissão: " + err); }
+        }
+
+        async function atualizarDadosRede() {
+            try {
+                const res = await fetch('/chain');
+                const dados = await res.json();
+                document.getElementById('info-blocos').innerText = dados.comprimento;
+                document.getElementById('info-recompensa').innerText = dados.recompensa_bloco_atual;
+                document.getElementById('info-mempool').innerText = dados.mempool.length;
+                return dados;
+            } catch (err) { return null; }
+        }
+
+        function alternarMineracao() {
+            const endereco = document.getElementById('miner-address').value.trim();
+            if(!endereco) return alert("Defina um endereço público receptor válido!");
+
+            if (minerando) {
+                minerando = false;
+                document.getElementById('btn-start-mine').innerText = "Iniciar";
+                document.getElementById('btn-start-mine').className = "btn-success";
+                document.getElementById('mine-pulse').className = "status-pulse";
+                document.getElementById('mine-status-text').innerText = "Inativo";
+                document.getElementById('info-mineracao').style.display = 'none';
+                log("Mineração finalizada.");
+            } else {
+                minerando = true;
+                document.getElementById('btn-start-mine').innerText = "Suspender";
+                document.getElementById('btn-start-mine').className = "btn-danger";
+                document.getElementById('mine-pulse').className = "status-pulse active-pulse";
+                document.getElementById('mine-status-text').innerText = "Processando Proof of Work...";
+                document.getElementById('info-mineracao').style.display = 'block';
+                log("Ativando núcleos de mineração...");
+                loopMineracao(endereco);
             }
+        }
 
-            # Junta a recompensa com as demais transações da fila
-            bloco_transacoes = [tx_recompensa] + transacoes_tratadas
+        function ordenarJsonStringify(obj) {
+            return JSON.stringify(obj, Object.keys(obj).sort());
+        }
 
-            # Normaliza os campos para evitar divergência de tipos (String vs Float)
-            bloco_transacoes_normalizado = []
-            for tx in bloco_transacoes:
-                bloco_transacoes_normalizado.append({
-                    "assinatura": tx["assinatura"],
-                    "destinatario": tx["destinatario"],
-                    "info_recompensa": tx.get("info_recompensa", ""),
-                    "minerador_taxa": tx.get("minerador_taxa", ""),
-                    "quantidade": float(tx["quantidade"]),
-                    "remetente": tx["remetente"],
-                    "taxa": float(tx.get("taxa", 0.0))
-                })
+        async function loopMineracao(enderecoMinerador) {
+            let hashesCalculados = 0;
+            let tempoInicioVelocidade = Date.now();
 
-            transacoes_ordenadas_str = ordenar_json_stringify(bloco_transacoes_normalizado)
-            timestamp = int(time.time())
-            alvo = "0" * dificuldade
-            
-            nonce = 0
-            bloco_minerado = False
-            tempo_inicio = time.time()
+            while(minerando) {
+                const dadosRede = await atualizarDadosRede();
+                if(!dadosRede) {
+                    await new Promise(r => setTimeout(r, 4000));
+                    continue;
+                }
 
-            # 3. Loop de Criptografia (Proof of Work)
-            while True:
-                conteudo = f"{indice}{hash_anterior}{transacoes_ordenadas_str}{timestamp}{nonce}"
-                hash_tentativa = hashlib.sha256(conteudo.encode()).hexdigest()
+                const ultimoBloco = dadosRede.cadeia[dadosRede.cadeia.length - 1];
+                const mempool = dadosRede.mempool;
+                const recompensaAtual = dadosRede.recompensa_bloco_atual;
 
-                if hash_tentativa.startswith(alvo):
-                    tempo_gasto = time.time() - tempo_inicio
-                    hash_rate = nonce / tempo_gasto if tempo_gasto > 0 else nonce
-                    
-                    print(f"🎉 Bloco #{indice} MINERADO! Nonce: {nonce} ({hash_rate/1000:.2f} KH/s)")
-                    
-                    bloco_pronto = {
-                        "indice": indice,
-                        "hash_anterior": hash_anterior,
-                        "transacoes": bloco_transacoes_normalizado,
-                        "timestamp": timestamp,
-                        "nonce": nonce,
-                        "dificuldade": dificuldade,
-                        "hash": hash_tentativa
-                    }
-                    
-                    # 4. Envia o bloco para validação e persistência do nó oficial
-                    print("📤 Enviando bloco minerado para o Render...")
-                    envio = requests.post(f"{URL_REDE}/blocks/receive", json=bloco_pronto)
-                    
-                    if envio.status_code == 200:
-                        res_dados = envio.json()
-                        if "mensagem" in res_dados:
-                            print(f"✅ Bloco aceito e adicionado à blockchain oficial!")
-                        else:
-                            print(f"❌ Rejeitado pelo nó: {res_dados.get('erro')}")
-                    else:
-                        print(f"❌ Erro crítico de rede HTTP {envio.status_code}")
-                    
-                    bloco_minerado = True
-                    break
-
-                nonce += 1
+                let totalTaxas = 0;
+                let transacoesTratadas = JSON.parse(JSON.stringify(mempool));
                 
-                # A cada 50.000 tentativas, verifica se a rede mudou ou se novos blocos entraram
-                if nonce % 50000 == 0:
-                    break
-            
-            # Pequena pausa tática para aliviar o processamento antes do próximo bloco
-            time.sleep(2)
+                transacoesTratadas.forEach(tx => { 
+                    totalTaxas += tx.taxa || 0; 
+                    tx.minerador_taxa = enderecoMinerador; 
+                });
 
-        except Exception as e:
-            print(f"❌ Ocorreu uma interrupção ou falha de conexão: {e}")
-            time.sleep(5)
+                const txRecompensa = {
+                    "remetente": "REDE (Coinbase)", 
+                    "destinatario": enderecoMinerador,
+                    "quantidade": parseFloat((recompensaAtual + totalTaxas).toFixed(4)), 
+                    "taxa": 0.0,
+                    "info_recompensa": `Base: ${recompensaAtual} + Taxas: ${totalTaxas}`, 
+                    "assinatura": "COINBASE_SIGN"
+                };
 
-if __name__ == "__main__":
-    # COLE AQUI o seu endereço de carteira gerado pelo index.html para coletar os blocos
-    SUA_CARTEIRA_PUBLICA = "INSIRA_SEU_ENDERECO_PUBLICO_AQUI"
-    
-    if SUA_CARTEIRA_PUBLICA == https://nagax-blockchain.onrender.com:
-        print("⚠️  Aviso: Altere a variável 'SUA_CARTEIRA_PUBLICA' com sua chave pública antes de minerar.")
-    else:
-        minerar(SUA_CARTEIRA_PUBLICA)
+                const blocoTransacoes = [txRecompensa, ...transacoesTratadas];
+                
+                const blocoTransacoesNormalizado = blocoTransacoes.map(tx => {
+                    return {
+                        assinatura: tx.assinatura,
+                        destinatario: tx.destinatario,
+                        info_recompensa: tx.info_recompensa || "",
+                        minerador_taxa: tx.minerador_taxa || "",
+                        quantidade: parseFloat(tx.quantidade),
+                        remetente: tx.remetente,
+                        taxa: tx.taxa !== undefined ? parseFloat(tx.taxa) : 0.0
+                    };
+                });
+
+                const indice = ultimoBloco.indice + 1;
+                const hashAnterior = ultimoBloco.hash;
+                const dificuldade = ultimoBloco.dificuldade;
+                const timestamp = Math.floor(Date.now() / 1000);
+                const alvo = "0".repeat(dificuldade);
+                
+                const transacoesOrdenadasStr = JSON.stringify(blocoTransacoesNormalizado.map(t => {
+                    return Object.keys(t).sort().reduce((obj, key) => {
+                        obj[key] = t[key];
+                        return obj;
+                    }, {});
+                }));
+
+                log(`Buscando assinatura válida para o Bloco #${indice}...`);
+
+                let nonce = 0;
+                let blocoAchado = false;
+                const intensidade = parseInt(document.getElementById('miner-intensity').value) || 2;
+                const tamanhoLote = 2500 * intensidade;
+
+                while(minerando) {
+                    for (let i = 0; i < tamanhoLote; i++) {
+                        const conteudo = `${indice}${hashAnterior}${transacoesOrdenadasStr}${timestamp}${nonce}`;
+                        const hashTentativa = CryptoJS.SHA256(conteudo).toString(CryptoJS.enc.Hex);
+                        hashesCalculados++;
+
+                        if (hashTentativa.substring(0, dificuldade) === alvo) {
+                            log(`💥 Sucesso! Bloco #${indice} fechado com o Nonce: ${nonce}`);
+                            const blocoPronto = { 
+                                indice, 
+                                hash_anterior: hashAnterior, 
+                                transacoes: blocoTransacoesNormalizado, 
+                                timestamp, 
+                                nonce, 
+                                dificuldade, 
+                                hash: hashTentativa 
+                            };
+                            await enviarBlocoAoServidor(blocoPronto);
+                            blocoAchado = true;
+                            break;
+                        }
+                        nonce++;
+                    }
+
+                    let tempoPassado = (Date.now() - tempoInicioVelocidade) / 1000;
+                    if(tempoPassado >= 2) {
+                        document.getElementById('mine-speed').innerText = Math.round(hashesCalculados / tempoPassado);
+                        hashesCalculados = 0;
+                        tempoInicioVelocidade = Date.now();
+                    }
+
+                    if(blocoAchado) break;
+                    
+                    const delayRespira = intensidade >= 4 ? 0 : 1;
+                    await new Promise(r => setTimeout(r, delayRespira));
+                    if(nonce % 40000 === 0) break; 
+                }
+                await new Promise(r => setTimeout(r, 1500));
+            }
+        }
+
+        async function enviarBlocoAoServidor(blocoPronto) {
+            try {
+                const res = await fetch('/blocks/receive', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(blocoPronto)
+                });
+                const resultado = await res.json();
+                log("Resposta do Nó Principal: " + (resultado.mensagem || resultado.erro));
+                atualizarDadosRede();
+            } catch (err) { log("Falha na persistência do bloco: " + err); }
+        }
+
+        atualizarDadosRede();
+    </script>
+</body>
+</html>

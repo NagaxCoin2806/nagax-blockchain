@@ -96,6 +96,32 @@ class Blockchain:
                         saldo += tx.get("taxa", 0.0)
         return saldo
 
+    # === FUNÇÕES DE VALIDAÇÃO INCORPORADAS ===
+    def calcular_hash_bloco_externo(self, bloco):
+        conteudo = f"{bloco['indice']}{bloco['hash_anterior']}{json.dumps(bloco['transacoes'], sort_keys=True)}{bloco['timestamp']}{bloco['nonce']}"
+        return hashlib.sha256(conteudo.encode()).hexdigest()
+
+    def validar_bloco_externo(self, bloco_novo):
+        ultimo_bloco = self.obter_ultimo_bloco()
+        
+        # 1. Valida se a sequência lógica faz sentido
+        if bloco_novo['indice'] != ultimo_bloco.indice + 1:
+            return False
+        if bloco_novo['hash_anterior'] != ultimo_bloco.hash:
+            return False
+            
+        # 2. Recalcula o Hash para checar adulteração de dados
+        hash_recalculado = self.calcular_hash_bloco_externo(bloco_novo)
+        if bloco_novo['hash'] != hash_recalculado:
+            return False
+            
+        # 3. Valida a dificuldade da Prova de Trabalho (Proof of Work)
+        alvo = "0" * bloco_novo['dificuldade']
+        if not hash_recalculado.startswith(alvo):
+            return False
+            
+        return True
+
     def validar_cadeia(self, cadeia_para_validar):
         bloco_anterior = cadeia_para_validar[0]
         indice_atual = 1
@@ -239,6 +265,36 @@ def minerar():
     bloco = rede_ngp.minerar_transacoes_pendentes(end)
     return jsonify({'mensagem': 'Bloco minerado!', 'dados_bloco': bloco.to_dict()}), 200
 
+# === NOVA ROTA INCORPORADA PARA RECEBER BLOCOS DO SEU HARDWARE ===
+@app.route('/blocks/receive', methods=['POST'])
+def receber_bloco():
+    dados_bloco = request.get_json()
+    
+    if not dados_bloco:
+        return jsonify({"erro": "Dados inválidos ou ausentes"}), 400
+        
+    if rede_ngp.validar_bloco_externo(dados_bloco):
+        # Transforma o dicionário JSON de volta em um Objeto Bloco estruturado
+        novo_bloco = Bloco(
+            dados_bloco["indice"], 
+            dados_bloco["hash_anterior"], 
+            dados_bloco["transacoes"], 
+            dados_bloco["dificuldade"], 
+            dados_bloco["timestamp"], 
+            dados_bloco["nonce"], 
+            dados_bloco["hash"]
+        )
+        rede_ngp.cadeia.append(novo_bloco)
+        
+        # Limpa as transações da Mempool local baseando-se nas assinaturas processadas
+        assinaturas_mineradas = [tx.get('assinatura') for tx in dados_bloco['transacoes']]
+        rede_ngp.transacoes_pendentes = [tx for tx in rede_ngp.transacoes_pendentes if tx.get('assinatura') not in assinaturas_mineradas]
+        
+        rede_ngp.salvar_no_disco()
+        return jsonify({"mensagem": "🎉 Bloco validado com sucesso e adicionado à rede!"}), 201
+    else:
+        return jsonify({"erro": "❌ Bloco inválido! Rejeitado pelo nó principal."}), 400
+
 @app.route('/wallet/create', methods=['GET'])
 def criar_carteira():
     sk = SigningKey.generate(curve=SECP256k1)
@@ -275,7 +331,7 @@ def consenso():
     return jsonify({'mensagem': 'Nossa cadeia já é a oficial e mais longa da rede.'}), 200
 
 if __name__ == '__main__':
-    import os
-    # O Render vai injetar a porta correta aqui automaticamente
-    porta = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=porta)
+    import sys
+    porta = int(sys.argv[1]) if len(sys.argv) > 1 else 5000
+    rede_ngp.arquivo_backup = f"blockchain_nagax_{porta}.json"
+    app.run(host='0.0.0.0', port=porta, debug=True)

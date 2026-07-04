@@ -40,13 +40,13 @@ class Bloco:
 
 
 class Blockchain:
-    def __init__(self, dificuldade_inicial=3, arquivo_backup="blockchain_nagax.json"):
+    def __init__(self, dificuldade_inicial=1, arquivo_backup="blockchain_nagax.json"):
         self.cadeia = []
         self.nos = set()  
         self.dificuldade = dificuldade_inicial
         self.transacoes_pendentes = []
         self.recompensa_base = 50.0
-        self.taxa_percentual = 0.01  # 1% de taxa comercial
+        self.taxa_percentual = 0.01  # 3% de taxa comercial
         self.arquivo_backup = arquivo_backup
         
         if not self.carregar_do_disco():

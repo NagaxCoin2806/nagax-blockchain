@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nagax Primer (NGP) - Painel P2P</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/elliptic/6.5.4/elliptic.min.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen p-6">
+
+    <div class="max-w-6xl mx-auto space-y-6">
+        <header class="flex justify-between items-center border-b border-gray-800 pb-4">
+            <h1 class="text-3xl font-bold text-emerald-400 tracking-wider">NAGAX PRIMER <span class="text-sm bg-emerald-900/50 text-emerald-300 px-2 py-1 rounded">Rede Distribuída P2P</span></h1>
+            <div class="space-x-2">
+                <button onclick="sincronizarRede()" class="bg-amber-600 hover:bg-amber-500 text-white font-medium px-4 py-2 rounded transition">Sincronizar Consenso P2P</button>
+                <button onclick="carregarDados()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2 rounded transition">Atualizar Painel</button>
+            </div>
+        </header>
+
+        <div class="bg-gray-800 p-5 rounded-lg border border-gray-700 shadow-lg grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <h2 class="text-lg font-semibold text-amber-400 mb-2">Conectar a Outro Nó (P2P)</h2>
+                <div class="flex gap-2">
+                    <input type="text" id="no-vizinho" placeholder="Ex: 127.0.0.1:5001" class="flex-1 bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500">
+                    <button onclick="conectarNo()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded text-sm font-medium transition">Conectar</button>
+                </div>
+            </div>
+            <div>
+                <h2 class="text-lg font-semibold text-gray-400 mb-2">Nós Conectados a Este Terminal:</h2>
+                <p id="lista-nos" class="text-xs font-mono text-gray-400 bg-gray-900 p-3 rounded border border-gray-700">Nenhum nó conectado ainda.</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-gray-800 p-5 rounded-lg border border-gray-700 shadow-lg flex flex-col justify-between">
+                <div>
+                    <h2 class="text-xl font-semibold text-emerald-400 mb-3">Gerador de Carteira</h2>
+                    <button onclick="criarCarteira()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded transition mb-4">Gerar Nova Carteira</button>
+                </div>
+                <div id="dados-carteira" class="hidden text-xs bg-gray-900 p-3 rounded border border-gray-700 space-y-2 break-all">
+                    <div><span class="text-gray-400 font-bold">Chave Privada:</span> <p id="c-privada" class="text-red-400 font-mono select-all cursor-pointer"></p></div>
+                    <div><span class="text-gray-400 font-bold">Endereço Público:</span> <p id="c-publica" class="text-emerald-300 font-mono select-all cursor-pointer"></p></div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 p-5 rounded-lg border border-gray-700 shadow-lg">
+                <h2 class="text-xl font-semibold text-emerald-400 mb-3">Minerar Bloco</h2>
+                <input type="text" id="endereco-minerador" placeholder="Endereço NGP do Minerador" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white font-mono mb-3 focus:outline-none focus:border-emerald-500">
+                <button onclick="minerarBloco()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded transition">Iniciar Mineração</button>
+            </div>
+
+            <div class="bg-gray-800 p-5 rounded-lg border border-gray-700 shadow-lg">
+                <h2 class="text-xl font-semibold text-emerald-400 mb-3">Consultar Saldo</h2>
+                <input type="text" id="endereco-saldo" placeholder="Endereço NGP" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white font-mono mb-3 focus:outline-none focus:border-emerald-500">
+                <button onclick="consultarSaldo()" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 rounded transition mb-2">Ver Saldo</button>
+                <p id="resultado-saldo" class="text-center font-bold text-lg text-emerald-300 mt-2"></p>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
+            <h2 class="text-xl font-semibold text-amber-400 mb-3 flex items-center gap-2">
+                Mempool da Rede <span id="mempool-count" class="text-xs bg-amber-950 text-amber-300 px-2 py-0.5 rounded-full">0 pendentes</span>
+            </h2>
+            <div id="lista-mempool" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[180px] overflow-y-auto">
+                <p class="text-sm text-gray-500 italic">Nenhuma transação aguardando na fila.</p>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
+            <h2 class="text-xl font-semibold text-emerald-400 mb-4">Enviar Moedas</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-3">
+                    <input type="password" id="tx-privada" placeholder="Sua Chave Privada Hex" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-red-500">
+                    <input type="text" id="tx-remetente" placeholder="Seu Endereço Público Hex" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-emerald-500">
+                </div>
+                <div class="space-y-3">
+                    <input type="text" id="tx-destinatario" placeholder="Endereço de Destino Hex" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-emerald-500">
+                    <input type="number" step="0.0001" id="tx-quantidade" placeholder="Quantidade (NGP)" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+            </div>
+            <button onclick="enviarTransacao()" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded transition shadow-lg">Assinar e Enviar para a Mempool</button>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
+            <h2 class="text-xl font-semibold text-emerald-400 mb-4">Livro Razão (Blocos na Cadeia)</h2>
+            <div id="lista-blocos" class="space-y-4 max-h-[300px] overflow-y-auto pr-2"></div>
+        </div>
+    </div>
+
+    <script>
+        // Captura automaticamente a porta em que a página está aberta (5000 ou 5001)
+        const API_URL = window.location.origin;
+        const ec = new elliptic.ec('secp256k1');
+
+        async function calcularHashTexto(texto) {
+            const buffer = new TextEncoder().encode(texto);
+            return crypto.subtle.digest('SHA-256', buffer).then(hash => {
+                return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+            });
+        }
+
+        async function carregarDados() {
+            try {
+                const res = await fetch(`${API_URL}/chain`);
+                const dados = await res.json();
+                
+                // 1. Atualiza Blocos
+                const container = document.getElementById('lista-blocos');
+                container.innerHTML = '';
+                dados.cadeia.reverse().forEach(bloco => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-gray-900 p-4 rounded border border-gray-700 text-sm space-y-1';
+                    div.innerHTML = `
+                        <div class="flex justify-between font-bold text-emerald-400"><span>Bloco #${bloco.indice}</span><span class="text-gray-500 text-xs">Nonce: ${bloco.nonce}</span></div>
+                        <div class="text-gray-400 text-xs break-all"><strong>Hash:</strong> ${bloco.hash}</div>
+                        <pre class="text-xs text-gray-300 bg-black/30 p-2 rounded mt-1 overflow-x-auto font-mono">${JSON.stringify(bloco.transacoes, null, 2)}</pre>
+                    `;
+                    container.appendChild(div);
+                });
+
+                // 2. Atualiza Mempool Visual
+                const mempoolContainer = document.getElementById('lista-mempool');
+                document.getElementById('mempool-count').innerText = `${dados.mempool.length} pendentes`;
+                if(dados.mempool.length === 0) {
+                    mempoolContainer.innerHTML = '<p class="text-sm text-gray-500 italic col-span-2">Nenhuma transação aguardando na fila.</p>';
+                } else {
+                    mempoolContainer.innerHTML = '';
+                    dados.mempool.forEach(tx => {
+                        const div = document.createElement('div');
+                        div.className = 'bg-amber-950/20 border border-amber-900/50 p-3 rounded text-xs space-y-1';
+                        div.innerHTML = `
+                            <div class="font-bold text-amber-400">Envio de: ${tx.quantidade} NGP (Taxa: ${tx.taxa})</div>
+                            <div class="text-gray-400 truncate"><strong>De:</strong> ${tx.remetente}</div>
+                            <div class="text-gray-400 truncate"><strong>Para:</strong> ${tx.destinatario}</div>
+                        `;
+                        mempoolContainer.appendChild(div);
+                    });
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function conectarNo() {
+            const no = document.getElementById('no-vizinho').value;
+            if(!no) return alert('Digite o endereço do outro nó!');
+            const res = await fetch(`${API_URL}/nodes/register`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ nodes: [no] })
+            });
+            const dados = await res.json();
+            document.getElementById('lista-nos').innerText = dados.total_nodes.join(', ');
+            alert('Nó registrado com sucesso!');
+        }
+
+        async function sincronizarRede() {
+            const res = await fetch(`${API_URL}/nodes/resolve`);
+            const dados = await res.json();
+            alert(dados.mensagem);
+            carregarDados();
+        }
+
+        async function enviarTransacao() {
+            const chavePrivadaHex = document.getElementById('tx-privada').value;
+            const remetente = document.getElementById('tx-remetente').value;
+            const destinatario = document.getElementById('tx-destinatario').value;
+            const quantidade = parseFloat(document.getElementById('tx-quantidade').value);
+
+            try {
+                const chaveObjeto = ec.keyFromPrivate(chavePrivadaHex, 'hex');
+                const hashTransacao = await calcularHashTexto(`${remetente}${destinatario}${quantidade}`);
+                const assinaturaHex = chaveObjeto.sign(hashTransacao).toDER('hex');
+
+                const resposta = await fetch(`${API_URL}/transactions/new`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ remetente, destinatario, quantidade, assinatura: assinaturaHex })
+                });
+
+                if(resposta.ok) {
+                    alert('Enviado para a Mempool!');
+                    carregarDados();
+                } else {
+                    const r = await resposta.json(); alert('Erro: ' + r.erro);
+                }
+            } catch(e) { alert('Erro na assinatura criptográfica.'); }
+        }
+
+        async function criarCarteira() {
+            const res = await fetch(`${API_URL}/wallet/create`);
+            const d = await res.json();
+            document.getElementById('c-privada').innerText = d.chave_privada_para_guardar;
+            document.getElementById('c-publica').innerText = d.endereco_publico;
+            document.getElementById('dados-carteira').classList.remove('hidden');
+        }
+
+        async function minerarBloco() {
+            const end = document.getElementById('endereco-minerador').value;
+            if(!end) return alert('Insira o endereço do minerador.');
+            const res = await fetch(`${API_URL}/mine?endereco=${end}`);
+            if(res.ok) { alert('Bloco minerado e Mempool processada!'); carregarDados(); }
+        }
+
+        async function consultarSaldo() {
+            const end = document.getElementById('endereco-saldo').value;
+            const res = await fetch(`${API_URL}/balance?endereco=${end}`);
+            const d = await res.json(); document.getElementById('resultado-saldo').innerText = d.saldo;
+        }
+
+        window.onload = carregarDados;
+    </script>
+</body>
+</html>

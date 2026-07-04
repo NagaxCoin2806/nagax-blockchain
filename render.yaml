@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: nagax-blockchain
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn nagax_blockchain:app
